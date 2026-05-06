@@ -9,7 +9,6 @@
   <!-- FIREBASE SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
-  
   <script>
     tailwind.config = {
       theme: {
@@ -61,18 +60,17 @@
 <body class="antialiased">
 
 <script>
-  // 🔥 CONFIGURACIÓN DE FIREBASE (¡IMPORTANTE! PEGA AQUÍ TUS CLAVES DE FIREBASE)
+  // 🔥 TU CONFIGURACIÓN DE FIREBASE (INTEGRADA)
   const firebaseConfig = {
-  apiKey: "AIzaSyDPQHc1TPeyZLbmfLQDzin68r9vvM8jX8k",
-  authDomain: "la-hinchada-cf1a2.firebaseapp.com",
-  databaseURL: "https://la-hinchada-cf1a2-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "la-hinchada-cf1a2",
-  storageBucket: "la-hinchada-cf1a2.firebasestorage.app",
-  messagingSenderId: "636082219451",
-  appId: "1:636082219451:web:3aa5ee1a7c18d4b7177c9e"
-};
+    apiKey: "AIzaSyDPQHc1TPeyZLbmfLQDzin68r9vvM8jX8k",
+    authDomain: "la-hinchada-cf1a2.firebaseapp.com",
+    databaseURL: "https://la-hinchada-cf1a2-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "la-hinchada-cf1a2",
+    storageBucket: "la-hinchada-cf1a2.firebasestorage.app",
+    messagingSenderId: "636082219451",
+    appId: "1:636082219451:web:3aa5ee1a7c18d4b7177c9e"
+  };
 
-  // Inicializar Firebase
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 
@@ -84,14 +82,11 @@
   const BUNDLE_THRESHOLD = 2;
   const BUNDLE_DISCOUNT_PER_ITEM = 5;
 
-  // Variable global para los equipos (se llenará desde la nube)
   let TEAMS = {}; 
-
   const KITS = [{ id: 'home', label: 'Local' }, { id: 'away', label: 'Visitante' }, { id: 'third', label: 'Tercera' }];
   const SIZES = ['S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL'];
   let cart = JSON.parse(localStorage.getItem('laHinchadaCart')) || [];
 
-  // ================= UTILIDADES =================
   function normalizeName(name) { return name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase(); }
   function getJerseyImage(leagueKey, teamName, kitIndex, ext = 'png') { return `./images/${leagueKey}/${normalizeName(teamName)}${kitIndex}.${ext}`; }
   function formatPrice(price) { return `${price.toFixed(2)}€`; }
@@ -123,7 +118,6 @@
     document.body.appendChild(n); setTimeout(() => n.remove(), 3000);
   }
 
-  // ================= DATOS DE ENVÍO =================
   function getShippingDetails() {
     const nombre = prompt("📦 Paso 1/3: Introduce tu NOMBRE COMPLETO para el envío:");
     if (!nombre || !nombre.trim()) return null;
@@ -134,7 +128,6 @@
     return { nombre: nombre.trim(), direccion: direccion.trim(), ciudad: ciudad.trim() };
   }
 
-  // ================= CARGA DE IMÁGENES CON FALLBACK =================
   function tryLoadImage(imgElement, leagueKey, teamName, kitIndex, attempt = 1) {
     const extensions = ['png', 'jpg', 'jpeg', 'PNG', 'JPG', 'JPEG'];
     if (attempt > extensions.length) {
@@ -150,7 +143,6 @@
     testImg.src = src;
   }
 
-  // ================= SCROLL =================
   function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
   function scrollToCatalog() {
     const catalog = document.getElementById('catalog');
@@ -161,7 +153,6 @@
     }
   }
 
-  // ================= CONTADOR DE VISTAS =================
   function initViewerCounters() {
     const getBase = (id) => { let h=0; for(let i=0;i<id.length;i++) h=id.charCodeAt(i)+((h<<5)-h); return Math.abs(h)%10+3; };
     const update = () => {
@@ -177,7 +168,6 @@
     update(); setInterval(update, 12000);
   }
 
-  // ================= RESEÑAS =================
   const REVIEWS = [
     { name: 'Carlos M.', location: 'Madrid', rating: 5, text: 'Calidad brutal, parece original. El envío tardó 12 días perfectos.', team: 'Real Madrid' },
     { name: 'Alejandro R.', location: 'Barcelona', rating: 5, text: 'La personalización quedó perfecta. Muy contento con la compra.', team: 'Barcelona' },
@@ -203,7 +193,6 @@
     `).join('');
   }
 
-  // ================= RENDERIZADO =================
   function renderLeagueButtons() {
     const nav = document.getElementById('league-nav');
     if(!nav) return;
@@ -215,19 +204,15 @@
   function renderProducts(leagueKey) {
     const grid = document.getElementById('products-grid');
     if(!grid) return;
-    
     const league = TEAMS[leagueKey];
     if(!league || !league.teams) { 
       grid.innerHTML = '<p class="col-span-full text-center text-gray-400 py-8">Cargando equipos...</p>'; 
       return; 
     }
-    
     const list = league.teams.map(t => ({...t, leagueName: league.name, leagueKey}));
-    
     document.querySelectorAll('.league-btn').forEach(b => {
       b.classList.toggle('active', b.dataset.league === leagueKey);
     });
-
     grid.innerHTML = list.map(team => `
       <div class="product-card animate-fadeIn">
         <div class="mb-4 bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-xl p-3 border border-gray-700">
@@ -283,7 +268,6 @@
     if(img){ img.style.opacity='0.3'; tryLoadImage(img, leagueKey, teamName, kitIndex, 1); }
   }
 
-  // ================= CARRITO =================
   function addToCart(teamId, teamName, leagueName) {
     const btn=document.querySelector(`[onclick="addToCart('${teamId}', '${teamName}', '${leagueName}')"]`); if(!btn) return;
     const card=btn.closest('.product-card'); if(!card) return;
@@ -294,7 +278,6 @@
     const name=card.querySelector(`#personalize-${teamId} [data-field="name"]`)?.value.trim().toUpperCase() || '';
     const number=card.querySelector(`#personalize-${teamId} [data-field="number"]`)?.value.trim() || '';
     if(personalized && (!name||!number)) return alert('⚠️ Para personalizar, completa Nombre y Número');
-    
     cart.push({ id:`${teamId}-${Date.now()}`, teamName, leagueName, kit, kitLabel, size, personalized, name, number, quantity:1 });
     saveCart(); showNotification(`${teamName} ${kitLabel} añadido`);
     const orig=btn.innerHTML; btn.innerHTML='✓ Añadido'; btn.classList.add('bg-green-500');
@@ -329,7 +312,6 @@
   }
   function closeCartModal() { const m=document.getElementById('cart-modal'); if(m) m.classList.remove('active'); }
 
-  // ================= CHECKOUT =================
   function generateOrderSummary(shipping = null) {
     const { items, total, discount, isBundle } = getCartTotals();
     let s = `🏆 *LA HINCHADA*\n━━━━━━━━━━━━━━━━━━\n\n`;
@@ -361,7 +343,6 @@
     window.open(`https://t.me/${TELEGRAM_USER.replace('@','')}?text=${encodeURIComponent(generateOrderSummary(shipping))}`, '_blank');
   }
 
-  // ================= BUSCADOR =================
   function initSearch() {
     const input = document.getElementById('search-input'); if(!input) return;
     input.addEventListener('input', (e) => {
@@ -376,59 +357,42 @@
         });
       });
       if(results.length===0) { const g=document.getElementById('products-grid'); if(g) g.innerHTML=`<div class="col-span-full text-center py-12 text-gray-400">No se encontraron resultados para "${q}"</div>`; }
-      else renderProducts(null, results); // Nota: renderProducts necesita ajuste para customList si quieres soporte buscador
+      else renderProducts(null, results);
     });
   }
 
-  // ================= BOTÓN VOLVER ARRIBA =================
   function initBackToTop() {
     const btn = document.getElementById('back-to-top'); if(!btn) return;
     window.addEventListener('scroll', () => btn.classList.toggle('visible', window.scrollY > 400));
     btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
   }
 
-  // ================= INICIALIZACIÓN (CONECTADA A FIREBASE) =================
+  // ================= INICIALIZACIÓN CON FIREBASE =================
   function initApp() {
-    // 1. Renderizar botones de navegación (vacío al inicio)
     renderLeagueButtons();
-
-    // 2. Escuchar cambios en la base de datos en tiempo real
     db.ref('teams').on('value', (snapshot) => {
       TEAMS = snapshot.val() || {};
-      
-      // Actualizar UI cuando cambian los datos
       renderLeagueButtons();
-      
-      // Si estamos en una liga, renderizarla, si no, la primera
       const currentLeagueBtn = document.querySelector('.league-btn.active');
       const leagueToLoad = currentLeagueBtn ? currentLeagueBtn.dataset.league : Object.keys(TEAMS)[0];
-      
       if(leagueToLoad && TEAMS[leagueToLoad]) renderProducts(leagueToLoad);
-      
-      // Reiniciar contadores de vistas al cambiar datos
       initViewerCounters();
     });
-
-    // 3. Iniciar resto de componentes
     updateCartCounter();
     initSearch();
     initBackToTop();
     renderReviews();
-
-    // 4. Modal listeners
     const cm = document.getElementById('cart-modal');
     if(cm) cm.addEventListener('click', e => { if(e.target===cm) closeCartModal(); });
     document.addEventListener('keydown', e => { if(e.key==='Escape') closeCartModal(); });
   }
   
-  // Ejecutar al cargar
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initApp);
   } else {
     initApp();
   }
 
-  // Exponer funciones globales
   window.filterByLeague=filterByLeague; window.selectSize=selectSize; window.togglePersonalization=togglePersonalization;
   window.changeKitImage=changeKitImage; window.addToCart=addToCart; window.openCartModal=openCartModal;
   window.closeCartModal=closeCartModal; window.removeFromCart=removeFromCart; window.openWhatsApp=openWhatsApp;
@@ -475,7 +439,6 @@
 
 <main id="catalog" class="max-w-7xl mx-auto px-4 pb-24"><div id="products-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"><p class="col-span-full text-center text-gray-400 py-12">Cargando equipos...</p></div></main>
 
-<!-- SECCIÓN DE RESEÑAS -->
 <section id="reviews" class="border-t border-gray-800 py-16 px-4 bg-dark-card/30">
   <div class="max-w-6xl mx-auto">
     <h2 class="text-3xl font-bold text-center mb-3">⭐ Lo que dicen nuestros clientes</h2>

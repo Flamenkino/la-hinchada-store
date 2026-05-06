@@ -62,16 +62,16 @@
   </div>
 
 <script>
-  // 🔥 CONFIGURACIÓN DE FIREBASE (¡MISMA QUE EN INDEX!)
+  // 🔥 TU CONFIGURACIÓN DE FIREBASE (INTEGRADA)
   const firebaseConfig = {
-  apiKey: "AIzaSyDPQHc1TPeyZLbmfLQDzin68r9vvM8jX8k",
-  authDomain: "la-hinchada-cf1a2.firebaseapp.com",
-  databaseURL: "https://la-hinchada-cf1a2-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "la-hinchada-cf1a2",
-  storageBucket: "la-hinchada-cf1a2.firebasestorage.app",
-  messagingSenderId: "636082219451",
-  appId: "1:636082219451:web:3aa5ee1a7c18d4b7177c9e"
-};
+    apiKey: "AIzaSyDPQHc1TPeyZLbmfLQDzin68r9vvM8jX8k",
+    authDomain: "la-hinchada-cf1a2.firebaseapp.com",
+    databaseURL: "https://la-hinchada-cf1a2-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "la-hinchada-cf1a2",
+    storageBucket: "la-hinchada-cf1a2.firebasestorage.app",
+    messagingSenderId: "636082219451",
+    appId: "1:636082219451:web:3aa5ee1a7c18d4b7177c9e"
+  };
 
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
@@ -87,8 +87,8 @@
   });
 
   function login() {
-    const e = document.getElementById('flamenkino84@gmail.com').value;
-    const p = document.getElementById('25092003Leire').value;
+    const e = document.getElementById('email').value;
+    const p = document.getElementById('password').value;
     auth.signInWithEmailAndPassword(e, p).catch(err => alert("Error: " + err.message));
   }
   function logout() { auth.signOut(); }
@@ -114,10 +114,8 @@
       const data = snap.val() || {};
       Object.entries(data).forEach(([leagueKey, league]) => {
         league.teams.forEach((team, idx) => {
-          // Obtenemos la clave única interna (firebase key)
           const teamsArr = league.teams;
           const internalKey = Object.keys(teamsArr)[idx]; 
-          
           list.innerHTML += `
             <div class="flex justify-between items-center bg-dark p-2 rounded border border-gray-700">
               <span>${team.badge || '⚽'} ${team.name} <small class="text-gray-500">(${league.name})</small></span>
@@ -132,9 +130,7 @@
     const leagueKey = document.getElementById('sel-league').value;
     const name = document.getElementById('inp-name').value;
     const badge = document.getElementById('inp-badge').value;
-
     if (!name || !leagueKey) return alert("Completa los campos");
-
     db.ref(`teams/${leagueKey}/teams`).push({
       id: name.toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 4),
       name: name,
