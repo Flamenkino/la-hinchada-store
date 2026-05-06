@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="es" style="scroll-padding-top: 140px;">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>La Hinchada | Camisetas de Fútbol Premium</title>
+  <meta name="description" content="Réplicas de camisetas de fútbol premium. 25€ base. Personalización, tallas S-4XL. Envío ~15 días.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FIREBASE SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { dark: '#0f0f0f', 'dark-card': '#1a1a1a', 'dark-hover': '#252525', neon: '#39ff14', gold: '#ffd700' },
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { background-color: #0f0f0f; color: #ffffff; font-family: 'Inter', system-ui, sans-serif; }
+    .kit-toggle input:checked + span { background-color: #39ff14; color: #0f0f0f; font-weight: 600; }
+    .kit-toggle span { cursor: pointer; padding: 0.375rem 0.75rem; border-radius: 0.5rem; font-size: 0.875rem; transition: all 0.2s; background-color: #252525; color: #9ca3af; }
+    .size-btn.selected { background-color: #39ff14; color: #0f0f0f; font-weight: 700; }
+    .size-btn { cursor: pointer; padding: 0.375rem 0.75rem; border-radius: 0.5rem; font-size: 0.875rem; transition: all 0.2s; background-color: #252525; color: #9ca3af; border: 1px solid #374151; }
+    .cart-badge { position: absolute; top: -6px; right: -6px; background-color: #39ff14; color: #0f0f0f; font-size: 0.75rem; font-weight: bold; border-radius: 9999px; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; }
+    .league-btn.active { background-color: #39ff14; color: #0f0f0f; font-weight: 600; }
+    .league-btn { padding: 0.5rem 1rem; border-radius: 9999px; font-size: 0.875rem; white-space: nowrap; transition: all 0.3s; background-color: #252525; color: #d1d5db; border: 1px solid #374151; cursor: pointer; }
+    .product-card { background-color: #1a1a1a; border-radius: 1rem; padding: 1rem; border: 1px solid #1f2937; transition: all 0.3s; }
+    .product-card:hover { border-color: rgba(57,255,20,0.5); }
+    .badge-placeholder { width: 2.5rem; height: 2.5rem; border-radius: 9999px; background: linear-gradient(135deg, #374151, #1f2937); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold; color: #9ca3af; border: 2px solid #4b5563; }
+    input[type="checkbox"]:checked { accent-color: #39ff14; }
+    input[type="text"] { background-color: #252525; border: 1px solid #374151; border-radius: 0.5rem; padding: 0.5rem 0.75rem; color: white; width: 100%; }
+    input[type="text"]:focus { outline: none; border-color: #39ff14; }
+    .btn-primary { background-color: #39ff14; color: #0f0f0f; font-weight: 600; padding: 0.75rem 1.5rem; border-radius: 0.75rem; transition: all 0.2s; }
+    .btn-primary:hover { background-color: #2ecc40; }
+    .btn-whatsapp { background-color: #25D366; color: white; font-weight: 600; padding: 0.75rem 1.5rem; border-radius: 0.75rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
+    .btn-whatsapp:hover { background-color: #128C7E; }
+    .btn-telegram { background-color: #0088cc; color: white; font-weight: 600; padding: 0.75rem 1.5rem; border-radius: 0.75rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
+    .btn-telegram:hover { background-color: #006699; }
+    .modal { position: fixed; inset: 0; background-color: rgba(0,0,0,0.85); backdrop-filter: blur(4px); z-index: 50; display: flex; align-items: center; justify-content: center; padding: 1rem; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+    .modal.active { opacity: 1; pointer-events: auto; }
+    .modal-content { background-color: #1a1a1a; border-radius: 1rem; padding: 1.5rem; max-width: 32rem; width: 100%; max-height: 85vh; overflow-y: auto; border: 1px solid #374151; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    .logo-img { max-height: 60px; width: auto; }
+    @media (max-width: 640px) { .logo-img { max-height: 50px; } }
+    #hero { scroll-margin-top: 150px; } #catalog { scroll-margin-top: 140px; } #reviews { scroll-margin-top: 140px; }
+    #back-to-top { opacity: 0; visibility: hidden; transition: all 0.3s ease; }
+    #back-to-top.visible { opacity: 1; visibility: visible; }
+  </style>
+</head>
+<body class="antialiased">
+
+<script>
+  // 🔥 CONFIGURACIÓN DE FIREBASE (¡IMPORTANTE! PEGA AQUÍ TUS CLAVES DE FIREBASE)
+  const firebaseConfig = {
+  apiKey: "AIzaSyDPQHc1TPeyZLbmfLQDzin68r9vvM8jX8k",
+  authDomain: "la-hinchada-cf1a2.firebaseapp.com",
+  databaseURL: "https://la-hinchada-cf1a2-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "la-hinchada-cf1a2",
+  storageBucket: "la-hinchada-cf1a2.firebasestorage.app",
+  messagingSenderId: "636082219451",
+  appId: "1:636082219451:web:3aa5ee1a7c18d4b7177c9e"
+};
+
+  // Inicializar Firebase
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  // ⚙️ CONFIGURACIÓN GENERAL
+  const WHATSAPP_NUMBER = '+34600000000';
+  const TELEGRAM_USER = '@tutienda';
+  const BASE_PRICE = 25;
+  const PERSONALIZATION_PRICE = 5;
+  const BUNDLE_THRESHOLD = 2;
+  const BUNDLE_DISCOUNT_PER_ITEM = 5;
+
+  // Variable global para los equipos (se llenará desde la nube)
+  let TEAMS = {}; 
+
+  const KITS = [{ id: 'home', label: 'Local' }, { id: 'away', label: 'Visitante' }, { id: 'third', label: 'Tercera' }];
+  const SIZES = ['S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL'];
+  let cart = JSON.parse(localStorage.getItem('laHinchadaCart')) || [];
+
+  // ================= UTILIDADES =================
+  function normalizeName(name) { return name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase(); }
+  function getJerseyImage(leagueKey, teamName, kitIndex, ext = 'png') { return `./images/${leagueKey}/${normalizeName(teamName)}${kitIndex}.${ext}`; }
+  function formatPrice(price) { return `${price.toFixed(2)}€`; }
+  
+  function getCartTotals() {
+    const isBundle = cart.length >= BUNDLE_THRESHOLD;
+    let total = 0, discount = 0;
+    const items = cart.map(item => {
+      const base = BASE_PRICE + (item.personalized ? PERSONALIZATION_PRICE : 0);
+      const final = isBundle ? base - BUNDLE_DISCOUNT_PER_ITEM : base;
+      total += final; discount += isBundle ? BUNDLE_DISCOUNT_PER_ITEM : 0;
+      return { ...item, finalPrice: final };
+    });
+    return { items, total, discount, isBundle };
+  }
+
+  function saveCart() { localStorage.setItem('laHinchadaCart', JSON.stringify(cart)); updateCartCounter(); }
+  function updateCartCounter() {
+    const count = cart.length;
+    ['cart-count', 'cart-count-mobile'].forEach(id => {
+      const el = document.getElementById(id);
+      if(el) { el.textContent = count; el.style.display = count > 0 ? 'flex' : 'none'; }
+    });
+  }
+  function showNotification(msg) {
+    const n = document.createElement('div');
+    n.className = 'fixed bottom-4 right-4 bg-dark-card border border-neon/30 text-white px-4 py-3 rounded-xl shadow-lg z-50 animate-fadeIn flex items-center gap-2';
+    n.innerHTML = `<span class="text-neon">✓</span> ${msg}`;
+    document.body.appendChild(n); setTimeout(() => n.remove(), 3000);
+  }
+
+  // ================= DATOS DE ENVÍO =================
+  function getShippingDetails() {
+    const nombre = prompt("📦 Paso 1/3: Introduce tu NOMBRE COMPLETO para el envío:");
+    if (!nombre || !nombre.trim()) return null;
+    const direccion = prompt("🏠 Paso 2/3: Introduce tu DIRECCIÓN (calle, número, piso/puerta):");
+    if (!direccion || !direccion.trim()) return null;
+    const ciudad = prompt("📍 Paso 3/3: Introduce tu CIUDAD y CÓDIGO POSTAL:");
+    if (!ciudad || !ciudad.trim()) return null;
+    return { nombre: nombre.trim(), direccion: direccion.trim(), ciudad: ciudad.trim() };
+  }
+
+  // ================= CARGA DE IMÁGENES CON FALLBACK =================
+  function tryLoadImage(imgElement, leagueKey, teamName, kitIndex, attempt = 1) {
+    const extensions = ['png', 'jpg', 'jpeg', 'PNG', 'JPG', 'JPEG'];
+    if (attempt > extensions.length) {
+      imgElement.onerror = null;
+      imgElement.src = `https://placehold.co/400x400/1a1a1a/39ff14/png?text=${encodeURIComponent(teamName)}`;
+      imgElement.style.opacity = '1'; return;
+    }
+    const ext = extensions[attempt - 1];
+    const src = getJerseyImage(leagueKey, teamName, kitIndex, ext);
+    const testImg = new Image();
+    testImg.onload = () => { imgElement.src = src; imgElement.style.opacity = '1'; };
+    testImg.onerror = () => tryLoadImage(imgElement, leagueKey, teamName, kitIndex, attempt + 1);
+    testImg.src = src;
+  }
+
+  // ================= SCROLL =================
+  function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+  function scrollToCatalog() {
+    const catalog = document.getElementById('catalog');
+    if (catalog) {
+      const headerHeight = document.querySelector('header').offsetHeight || 140;
+      const top = catalog.getBoundingClientRect().top + window.pageYOffset - headerHeight - 10;
+      window.scrollTo({ top, behavior: 'smooth' });
+    }
+  }
+
+  // ================= CONTADOR DE VISTAS =================
+  function initViewerCounters() {
+    const getBase = (id) => { let h=0; for(let i=0;i<id.length;i++) h=id.charCodeAt(i)+((h<<5)-h); return Math.abs(h)%10+3; };
+    const update = () => {
+      Object.keys(TEAMS).forEach(league => {
+        TEAMS[league].teams.forEach(team => {
+          const el = document.getElementById(`viewers-${team.id}`);
+          if(!el) return;
+          const cur = Math.max(1, getBase(team.id) + Math.floor(Math.random()*4)-1);
+          el.textContent = `${cur} ${cur===1?'persona viendo':'personas viendo'} esto`;
+        });
+      });
+    };
+    update(); setInterval(update, 12000);
+  }
+
+  // ================= RESEÑAS =================
+  const REVIEWS = [
+    { name: 'Carlos M.', location: 'Madrid', rating: 5, text: 'Calidad brutal, parece original. El envío tardó 12 días perfectos.', team: 'Real Madrid' },
+    { name: 'Alejandro R.', location: 'Barcelona', rating: 5, text: 'La personalización quedó perfecta. Muy contento con la compra.', team: 'Barcelona' },
+    { name: 'David L.', location: 'Sevilla', rating: 5, text: 'Segunda vez que compro. Relación calidad-precio inmejorable.', team: 'Sevilla' },
+    { name: 'Miguel A.', location: 'Valencia', rating: 5, text: 'Tela de buena calidad y los escudos bien bordados. Recomendado 100%.', team: 'Valencia' },
+    { name: 'Javier S.', location: 'Bilbao', rating: 5, text: 'Llegó antes de lo esperado. La talla perfecta, muy contento.', team: 'Athletic Club' },
+    { name: 'Antonio G.', location: 'Málaga', rating: 5, text: 'Increíble por 25€. He comprado en otras tiendas y esto es lo mejor.', team: 'Málaga' }
+  ];
+  function renderReviews() {
+    const container = document.getElementById('reviews-grid');
+    if(!container) return;
+    container.innerHTML = REVIEWS.map(review => `
+      <div class="bg-dark-card p-6 rounded-xl border border-gray-800 hover:border-neon/30 transition-all">
+        <div class="flex items-center gap-1 mb-3">
+          ${Array(5).fill(0).map((_,i) => `<span class="${i<review.rating?'text-gold':'text-gray-600'}">★</span>`).join('')}
+        </div>
+        <p class="text-gray-300 text-sm mb-4 italic">"${review.text}"</p>
+        <div class="flex items-center justify-between">
+          <div><p class="font-semibold text-white text-sm">${review.name}</p><p class="text-xs text-gray-500">${review.location}</p></div>
+          <span class="text-xs text-neon bg-neon/10 px-2 py-1 rounded">${review.team}</span>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // ================= RENDERIZADO =================
+  function renderLeagueButtons() {
+    const nav = document.getElementById('league-nav');
+    if(!nav) return;
+    nav.innerHTML = Object.entries(TEAMS).map(([key, data], i) => 
+      `<button onclick="filterByLeague('${key}')" class="league-btn ${i===0?'active':''}" data-league="${key}">${data.name}</button>`
+    ).join('');
+  }
+
+  function renderProducts(leagueKey) {
+    const grid = document.getElementById('products-grid');
+    if(!grid) return;
+    
+    const league = TEAMS[leagueKey];
+    if(!league || !league.teams) { 
+      grid.innerHTML = '<p class="col-span-full text-center text-gray-400 py-8">Cargando equipos...</p>'; 
+      return; 
+    }
+    
+    const list = league.teams.map(t => ({...t, leagueName: league.name, leagueKey}));
+    
+    document.querySelectorAll('.league-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.league === leagueKey);
+    });
+
+    grid.innerHTML = list.map(team => `
+      <div class="product-card animate-fadeIn">
+        <div class="mb-4 bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-xl p-3 border border-gray-700">
+          <img id="img-${team.id}" src="${getJerseyImage(leagueKey, team.name, 1, 'png')}" alt="${team.name}" loading="lazy"
+               class="w-full h-52 object-contain drop-shadow-2xl transition-all duration-300 hover:scale-105"
+               onerror="tryLoadImage(this, '${leagueKey}', '${team.name.replace(/'/g, "\\'")}', 1)">
+        </div>
+        <div class="flex items-center gap-3 mb-3">
+          <div class="badge-placeholder text-lg">${team.badge || '⚽'}</div>
+          <div><h3 class="font-semibold text-white">${team.name}</h3><p class="text-xs text-gray-500">${team.leagueName}</p></div>
+        </div>
+        <div class="kit-toggle flex gap-1 mb-4 bg-dark-hover rounded-xl p-1">
+          ${KITS.map((k, idx) => `<label class="flex-1 text-center"><input type="radio" name="kit-${team.id}" value="${k.id}" class="hidden" ${idx===0?'checked':''} onchange="changeKitImage(this, '${team.id}', '${leagueKey}', '${team.name.replace(/'/g, "\\'")}', ${idx+1})"><span class="block ${idx===0?'bg-neon text-dark font-semibold':''}">${k.label}</span></label>`).join('')}
+        </div>
+        <div class="flex flex-wrap gap-1.5 mb-4">
+          ${SIZES.map((s, i) => `<button type="button" class="size-btn ${i===2?'selected':''}" onclick="selectSize(this)">${s}</button>`).join('')}
+        </div>
+        <div class="mb-4 p-3 bg-dark-hover rounded-xl">
+          <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" onchange="togglePersonalization(this, '${team.id}')"><span class="text-sm text-gray-300">Personalizar (+5€)</span></label>
+          <div id="personalize-${team.id}" class="hidden mt-3 space-y-2">
+            <input type="text" placeholder="Nombre (ej: MESSI)" maxlength="15" data-field="name">
+            <input type="text" placeholder="Número (1-99)" maxlength="2" pattern="[0-9]{1,2}" data-field="number">
+          </div>
+        </div>
+        <div class="flex items-center gap-1.5 text-xs text-gray-400 mt-2 mb-3">
+          <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-neon opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-neon"></span></span>
+          <span id="viewers-${team.id}">3-12 personas viendo esto</span>
+        </div>
+        <div class="flex items-center justify-between pt-3 border-t border-gray-800">
+          <span class="text-2xl font-bold text-neon" id="price-${team.id}">${formatPrice(BASE_PRICE)}</span>
+          <button type="button" onclick="addToCart('${team.id}', '${team.name}', '${team.leagueName}')" class="btn-primary text-sm px-5 py-2.5">Añadir +</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function filterByLeague(key) {
+    const si = document.getElementById('search-input'); if(si) si.value='';
+    const bn = document.getElementById('promo-banner'); if(bn) bn.classList.remove('hidden');
+    renderProducts(key); scrollToCatalog();
+  }
+  function selectSize(btn) { const p=btn.parentElement; if(!p) return; p.querySelectorAll('.size-btn').forEach(b=>b.classList.remove('selected')); btn.classList.add('selected'); }
+  function togglePersonalization(cb, teamId) {
+    const panel=document.getElementById(`personalize-${teamId}`), price=document.getElementById(`price-${teamId}`);
+    if(!panel||!price) return;
+    if(cb.checked){ panel.classList.remove('hidden'); price.textContent=formatPrice(BASE_PRICE+PERSONALIZATION_PRICE); }
+    else { panel.classList.add('hidden'); price.textContent=formatPrice(BASE_PRICE); panel.querySelectorAll('input').forEach(i=>i.value=''); }
+  }
+  function changeKitImage(input, teamId, leagueKey, teamName, kitIndex) {
+    const toggle=input.closest('.kit-toggle');
+    if(toggle){ toggle.querySelectorAll('span').forEach(s=>s.classList.remove('bg-neon','text-dark','font-semibold')); input.nextElementSibling.classList.add('bg-neon','text-dark','font-semibold'); }
+    const img=document.getElementById(`img-${teamId}`);
+    if(img){ img.style.opacity='0.3'; tryLoadImage(img, leagueKey, teamName, kitIndex, 1); }
+  }
+
+  // ================= CARRITO =================
+  function addToCart(teamId, teamName, leagueName) {
+    const btn=document.querySelector(`[onclick="addToCart('${teamId}', '${teamName}', '${leagueName}')"]`); if(!btn) return;
+    const card=btn.closest('.product-card'); if(!card) return;
+    const kit=card.querySelector(`input[name="kit-${teamId}"]:checked`)?.value || 'home';
+    const kitLabel=KITS.find(k=>k.id===kit)?.label || 'Local';
+    const size=card.querySelector('.size-btn.selected')?.textContent || 'L';
+    const personalized=card.querySelector('input[type="checkbox"]')?.checked || false;
+    const name=card.querySelector(`#personalize-${teamId} [data-field="name"]`)?.value.trim().toUpperCase() || '';
+    const number=card.querySelector(`#personalize-${teamId} [data-field="number"]`)?.value.trim() || '';
+    if(personalized && (!name||!number)) return alert('⚠️ Para personalizar, completa Nombre y Número');
+    
+    cart.push({ id:`${teamId}-${Date.now()}`, teamName, leagueName, kit, kitLabel, size, personalized, name, number, quantity:1 });
+    saveCart(); showNotification(`${teamName} ${kitLabel} añadido`);
+    const orig=btn.innerHTML; btn.innerHTML='✓ Añadido'; btn.classList.add('bg-green-500');
+    setTimeout(()=>{ btn.innerHTML=orig; btn.classList.remove('bg-green-500'); }, 1200);
+  }
+  function removeFromCart(i) { cart.splice(i,1); saveCart(); openCartModal(); }
+
+  function openCartModal() {
+    const modal=document.getElementById('cart-modal'), container=document.getElementById('cart-items');
+    if(!modal||!container) return;
+    const {items, total, discount, isBundle}=getCartTotals();
+    if(items.length===0) container.innerHTML='<p class="text-gray-400 text-center py-8">Carrito vacío 🛒</p>';
+    else {
+      container.innerHTML = items.map((item,i)=>`
+        <div class="flex justify-between items-start py-3 border-b border-gray-800 last:border-0">
+          <div class="flex-1"><p class="font-medium">${item.teamName}</p><p class="text-sm text-gray-400">${item.leagueName} • ${item.kitLabel} • Talla ${item.size}</p>${item.personalized?`<p class="text-xs text-neon mt-1">✏️ ${item.name} #${item.number}</p>`:''}</div>
+          <div class="text-right"><p class="font-bold text-neon">${formatPrice(item.finalPrice)}</p><button type="button" onclick="removeFromCart(${i})" class="text-xs text-red-400 hover:text-red-300 mt-1">Eliminar</button></div>
+        </div>`).join('');
+      container.innerHTML += `
+        <div class="mt-4 pt-4 border-t border-gray-700 space-y-2">
+          ${isBundle?`<div class="flex justify-between text-gold font-medium"><span>🔥 Promo 2+ unidades</span><span>-${formatPrice(discount)}</span></div>`:''}
+          <div class="flex justify-between items-center text-lg font-bold"><span>Total:</span><span class="text-neon">${formatPrice(total)}</span></div>
+          ${isBundle?`<p class="text-xs text-gray-400 text-center">2 Normal: 40€ | 2 Personalizadas: 50€</p>`:''}
+          <p class="text-xs text-gray-500 text-center">📝 Al confirmar se pedirán tus datos de envío</p>
+          <div class="grid grid-cols-2 gap-3 pt-2">
+            <button type="button" onclick="openWhatsApp()" class="btn-whatsapp text-sm">WhatsApp</button>
+            <button type="button" onclick="openTelegram()" class="btn-telegram text-sm">Telegram</button>
+          </div>
+        </div>`;
+    }
+    modal.classList.add('active');
+  }
+  function closeCartModal() { const m=document.getElementById('cart-modal'); if(m) m.classList.remove('active'); }
+
+  // ================= CHECKOUT =================
+  function generateOrderSummary(shipping = null) {
+    const { items, total, discount, isBundle } = getCartTotals();
+    let s = `🏆 *LA HINCHADA*\n━━━━━━━━━━━━━━━━━━\n\n`;
+    items.forEach((item, i) => {
+      s += `${i+1}. ${item.teamName} (${item.leagueName})\n   🎽 ${item.kitLabel} | 📏 Talla: ${item.size}\n`;
+      if(item.personalized) s += `   ✏️ ${item.name} #${item.number}\n`;
+      s += `   💰 ${formatPrice(item.finalPrice)}${isBundle ? ' (Promo)' : ''}\n\n`;
+    });
+    s += `━━━━━━━━━━━━━━━━━━\n`;
+    if (isBundle) s += `🎉 *Descuento aplicado: -${formatPrice(discount)}*\n`;
+    s += `*TOTAL A PAGAR: ${formatPrice(total)}*\n`;
+    if (shipping) {
+      s += `\n📦 *DATOS DE ENVÍO:*\n👤 ${shipping.nombre}\n🏠 ${shipping.direccion}\n📍 ${shipping.ciudad}`;
+    } else { s += `\n📦 Envío GRATIS incluido (aprox. 15 días)`; }
+    return s;
+  }
+
+  function openWhatsApp() {
+    if(!cart.length) return showNotification('Añade productos primero');
+    const shipping = getShippingDetails();
+    if(!shipping) return showNotification('Envío cancelado. Completa los datos para continuar.');
+    window.open(`https://wa.me/${WHATSAPP_NUMBER.replace('+','')}?text=${encodeURIComponent(generateOrderSummary(shipping))}`, '_blank');
+  }
+
+  function openTelegram() {
+    if(!cart.length) return showNotification('Añade productos primero');
+    const shipping = getShippingDetails();
+    if(!shipping) return showNotification('Envío cancelado. Completa los datos para continuar.');
+    window.open(`https://t.me/${TELEGRAM_USER.replace('@','')}?text=${encodeURIComponent(generateOrderSummary(shipping))}`, '_blank');
+  }
+
+  // ================= BUSCADOR =================
+  function initSearch() {
+    const input = document.getElementById('search-input'); if(!input) return;
+    input.addEventListener('input', (e) => {
+      const q = e.target.value.trim().toLowerCase();
+      const banner = document.getElementById('promo-banner');
+      if(!q) { if(banner) banner.classList.remove('hidden'); filterByLeague(Object.keys(TEAMS)[0]); return; }
+      if(banner) banner.classList.add('hidden');
+      const results = [];
+      Object.entries(TEAMS).forEach(([key, league]) => {
+        league.teams.forEach(team => {
+          if(team.name.toLowerCase().includes(q) || league.name.toLowerCase().includes(q)) results.push({...team, leagueName: league.name, leagueKey: key});
+        });
+      });
+      if(results.length===0) { const g=document.getElementById('products-grid'); if(g) g.innerHTML=`<div class="col-span-full text-center py-12 text-gray-400">No se encontraron resultados para "${q}"</div>`; }
+      else renderProducts(null, results); // Nota: renderProducts necesita ajuste para customList si quieres soporte buscador
+    });
+  }
+
+  // ================= BOTÓN VOLVER ARRIBA =================
+  function initBackToTop() {
+    const btn = document.getElementById('back-to-top'); if(!btn) return;
+    window.addEventListener('scroll', () => btn.classList.toggle('visible', window.scrollY > 400));
+    btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+  }
+
+  // ================= INICIALIZACIÓN (CONECTADA A FIREBASE) =================
+  function initApp() {
+    // 1. Renderizar botones de navegación (vacío al inicio)
+    renderLeagueButtons();
+
+    // 2. Escuchar cambios en la base de datos en tiempo real
+    db.ref('teams').on('value', (snapshot) => {
+      TEAMS = snapshot.val() || {};
+      
+      // Actualizar UI cuando cambian los datos
+      renderLeagueButtons();
+      
+      // Si estamos en una liga, renderizarla, si no, la primera
+      const currentLeagueBtn = document.querySelector('.league-btn.active');
+      const leagueToLoad = currentLeagueBtn ? currentLeagueBtn.dataset.league : Object.keys(TEAMS)[0];
+      
+      if(leagueToLoad && TEAMS[leagueToLoad]) renderProducts(leagueToLoad);
+      
+      // Reiniciar contadores de vistas al cambiar datos
+      initViewerCounters();
+    });
+
+    // 3. Iniciar resto de componentes
+    updateCartCounter();
+    initSearch();
+    initBackToTop();
+    renderReviews();
+
+    // 4. Modal listeners
+    const cm = document.getElementById('cart-modal');
+    if(cm) cm.addEventListener('click', e => { if(e.target===cm) closeCartModal(); });
+    document.addEventListener('keydown', e => { if(e.key==='Escape') closeCartModal(); });
+  }
+  
+  // Ejecutar al cargar
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initApp);
+  } else {
+    initApp();
+  }
+
+  // Exponer funciones globales
+  window.filterByLeague=filterByLeague; window.selectSize=selectSize; window.togglePersonalization=togglePersonalization;
+  window.changeKitImage=changeKitImage; window.addToCart=addToCart; window.openCartModal=openCartModal;
+  window.closeCartModal=closeCartModal; window.removeFromCart=removeFromCart; window.openWhatsApp=openWhatsApp;
+  window.openTelegram=openTelegram; window.tryLoadImage=tryLoadImage; window.scrollToTop=scrollToTop;
+</script>
+
+<!-- ================= UI ================= -->
+<header class="sticky top-0 z-40 bg-dark/95 backdrop-blur-md border-b border-gray-800">
+  <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-3 cursor-pointer" onclick="scrollToTop()">
+      <img src="./logo.png" alt="La Hinchada" class="logo-img" onerror="this.style.display='none'">
+      <div><h1 class="font-bold text-lg leading-tight">La Hinchada</h1><p class="text-xs text-gray-500 hidden sm:block">Camisetas Premium • Envío Mundial</p></div>
+    </div>
+    <button type="button" onclick="openCartModal()" class="relative p-2.5 rounded-xl bg-dark-hover hover:bg-gray-700 transition-colors border border-gray-700">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+      <span id="cart-count" class="cart-badge" style="display:none">0</span>
+    </button>
+  </div>
+  <div class="border-t border-gray-800 bg-dark/95 backdrop-blur-sm"><div class="max-w-7xl mx-auto px-2"><div id="league-nav" class="flex gap-2 py-3 overflow-x-auto scrollbar-hide"></div></div></div>
+</header>
+
+<section id="hero" class="py-8 px-4 text-center">
+  <h2 class="text-3xl md:text-4xl font-bold mb-3"><span class="text-transparent bg-clip-text bg-gradient-to-r from-neon to-gold">Camisetas de Fútbol</span><br><span class="text-white">Calidad Profesional</span></h2>
+  <p class="text-gray-400 max-w-2xl mx-auto mb-6">Réplicas de alta calidad. Personalización disponible. <span class="text-neon font-semibold">25€ base</span> • Envíos a toda España y Europa.</p>
+  <div class="flex flex-wrap justify-center gap-4 text-sm mb-6">
+    <span class="px-3 py-1.5 rounded-full bg-dark-hover border border-gray-700 flex items-center gap-2">🔒 Pago Seguro</span>
+    <span class="px-3 py-1.5 rounded-full bg-dark-hover border border-gray-700 flex items-center gap-2">📦 Envío Gratis</span>
+    <span class="px-3 py-1.5 rounded-full bg-dark-hover border border-gray-700 flex items-center gap-2">✅ Calidad AAA</span>
+    <span class="px-3 py-1.5 rounded-full bg-dark-hover border border-gray-700 flex items-center gap-2">🚚 Entrega ~15 días</span>
+  </div>
+</section>
+
+<div class="max-w-xl mx-auto px-4 mb-4">
+  <div class="relative"><input type="text" id="search-input" placeholder="🔍 Buscar equipo, liga o país..." class="w-full bg-dark-hover border border-gray-700 rounded-xl px-4 py-3 pl-10 text-white placeholder-gray-500 focus:outline-none focus:border-neon transition-all"><svg class="w-5 h-5 absolute left-3 top-3.5 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg></div>
+</div>
+
+<div id="promo-banner" class="max-w-4xl mx-auto px-4 mb-8 animate-fadeIn">
+  <div class="bg-gradient-to-r from-gold/10 to-neon/10 border border-neon/30 rounded-xl p-4 text-center flex flex-col sm:flex-row items-center justify-center gap-4">
+    <span class="text-2xl">🔥</span>
+    <div class="text-left"><p class="font-bold text-gold">OFERTA ESPECIAL 2+ UNIDADES</p><p class="text-sm text-gray-300">2 Normal: <span class="text-neon font-bold">40€</span> | 2 Personalizadas: <span class="text-neon font-bold">50€</span></p></div>
+    <span class="px-3 py-1 bg-neon/20 text-neon rounded-full text-xs font-bold uppercase">Limitada</span>
+  </div>
+</div>
+
+<main id="catalog" class="max-w-7xl mx-auto px-4 pb-24"><div id="products-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"><p class="col-span-full text-center text-gray-400 py-12">Cargando equipos...</p></div></main>
+
+<!-- SECCIÓN DE RESEÑAS -->
+<section id="reviews" class="border-t border-gray-800 py-16 px-4 bg-dark-card/30">
+  <div class="max-w-6xl mx-auto">
+    <h2 class="text-3xl font-bold text-center mb-3">⭐ Lo que dicen nuestros clientes</h2>
+    <p class="text-gray-400 text-center mb-10">Más de 500 clientes satisfechos confían en nosotros</p>
+    <div id="reviews-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    <div class="mt-10 text-center">
+      <div class="inline-flex items-center gap-2 bg-neon/10 border border-neon/30 rounded-full px-6 py-3">
+        <span class="text-2xl font-bold text-neon">4.9</span>
+        <div class="flex text-gold">★★★★★</div>
+        <span class="text-gray-400 text-sm">Basado en 127 valoraciones</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="border-t border-gray-800 py-8 px-4 text-center text-gray-500 text-sm">
+  <p>© 2026 La Hinchada • Réplicas no oficiales para coleccionistas</p>
+  <p class="mt-1">💳 Pago seguro • 📦 Envío gratis (~15 días)</p>
+</footer>
+
+<div id="cart-modal" class="modal" onclick="if(event.target===this) closeCartModal()">
+  <div class="modal-content">
+    <div class="flex justify-between items-center mb-4"><h3 class="text-xl font-bold text-white">🛒 Tu Pedido</h3><button type="button" onclick="closeCartModal()" class="text-gray-400 hover:text-white text-2xl">&times;</button></div>
+    <div id="cart-items" class="space-y-1"></div>
+  </div>
+</div>
+
+<button id="back-to-top" type="button" class="fixed bottom-20 right-6 md:bottom-6 md:right-6 w-12 h-12 rounded-full bg-dark-hover border border-gray-700 text-neon shadow-lg flex items-center justify-center z-30 hover:bg-gray-800 transition-all"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg></button>
+<button type="button" onclick="openCartModal()" class="fixed bottom-6 right-6 md:hidden w-14 h-14 rounded-full bg-neon text-dark shadow-lg flex items-center justify-center z-30 border-2 border-dark"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg><span id="cart-count-mobile" class="cart-badge" style="display:none">0</span></button>
+
+</body>
+</html>
