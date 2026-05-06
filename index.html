@@ -162,7 +162,6 @@
     const getBase = (id) => { let h=0; for(let i=0;i<id.length;i++) h=id.charCodeAt(i)+((h<<5)-h); return Math.abs(h)%10+3; };
     const update = () => {
       Object.keys(TEAMS).forEach(league => {
-        // ✅ CORRECCIÓN: Convertir objeto a array
         const teams = Object.values(TEAMS[league].teams);
         teams.forEach(team => {
           const el = document.getElementById(`viewers-${team.id}`);
@@ -210,37 +209,48 @@
     ).join('');
   }
 
-  function renderProducts(leagueKey) {
+  // ✅ CORREGIDO: Acepta lista personalizada para el buscador
+  function renderProducts(leagueKey, customList = null) {
     const grid = document.getElementById('products-grid');
     if(!grid) return;
     
-    const league = TEAMS[leagueKey];
-    if(!league || !league.teams) { 
-      grid.innerHTML = '<p class="col-span-full text-center text-gray-400 py-8">Cargando equipos...</p>'; 
-      return; 
+    let list;
+    
+    if (customList) {
+      // Modo búsqueda: usar la lista filtrada
+      list = customList;
+      // Quitar clase active de todas las ligas
+      document.querySelectorAll('.league-btn').forEach(b => b.classList.remove('active'));
+    } else {
+      // Modo normal: cargar desde la liga seleccionada
+      const league = TEAMS[leagueKey];
+      if(!league || !league.teams) { 
+        grid.innerHTML = '<p class="col-span-full text-center text-gray-400 py-8">Cargando equipos...</p>'; 
+        return; 
+      }
+      const teamsArray = Object.values(league.teams);
+      list = teamsArray.map(t => ({...t, leagueName: league.name, leagueKey}));
+      
+      // Marcar liga activa
+      document.querySelectorAll('.league-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.league === leagueKey);
+      });
     }
-    
-    // ✅ CORRECCIÓN PRINCIPAL: Convertir el objeto de equipos a un array
-    const teamsArray = Object.values(league.teams);
-    const list = teamsArray.map(t => ({...t, leagueName: league.name, leagueKey}));
-    
-    document.querySelectorAll('.league-btn').forEach(b => {
-      b.classList.toggle('active', b.dataset.league === leagueKey);
-    });
 
+    // Renderizar productos
     grid.innerHTML = list.map(team => `
       <div class="product-card animate-fadeIn">
         <div class="mb-4 bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-xl p-3 border border-gray-700">
-          <img id="img-${team.id}" src="${getJerseyImage(leagueKey, team.name, 1, 'png')}" alt="${team.name}" loading="lazy"
+          <img id="img-${team.id}" src="${getJerseyImage(team.leagueKey, team.name, 1, 'png')}" alt="${team.name}" loading="lazy"
                class="w-full h-52 object-contain drop-shadow-2xl transition-all duration-300 hover:scale-105"
-               onerror="tryLoadImage(this, '${leagueKey}', '${team.name.replace(/'/g, "\\'")}', 1)">
+               onerror="tryLoadImage(this, '${team.leagueKey}', '${team.name.replace(/'/g, "\\'")}', 1)">
         </div>
         <div class="flex items-center gap-3 mb-3">
           <div class="badge-placeholder text-lg">${team.badge || '⚽'}</div>
           <div><h3 class="font-semibold text-white">${team.name}</h3><p class="text-xs text-gray-500">${team.leagueName}</p></div>
         </div>
         <div class="kit-toggle flex gap-1 mb-4 bg-dark-hover rounded-xl p-1">
-          ${KITS.map((k, idx) => `<label class="flex-1 text-center"><input type="radio" name="kit-${team.id}" value="${k.id}" class="hidden" ${idx===0?'checked':''} onchange="changeKitImage(this, '${team.id}', '${leagueKey}', '${team.name.replace(/'/g, "\\'")}', ${idx+1})"><span class="block ${idx===0?'bg-neon text-dark font-semibold':''}">${k.label}</span></label>`).join('')}
+          ${KITS.map((k, idx) => `<label class="flex-1 text-center"><input type="radio" name="kit-${team.id}" value="${k.id}" class="hidden" ${idx===0?'checked':''} onchange="changeKitImage(this, '${team.id}', '${team.leagueKey}', '${team.name.replace(/'/g, "\\'")}', ${idx+1})"><span class="block ${idx===0?'bg-neon text-dark font-semibold':''}">${k.label}</span></label>`).join('')}
         </div>
         <div class="flex flex-wrap gap-1.5 mb-4">
           ${SIZES.map((s, i) => `<button type="button" class="size-btn ${i===2?'selected':''}" onclick="selectSize(this)">${s}</button>`).join('')}
@@ -361,24 +371,42 @@
     window.open(`https://t.me/${TELEGRAM_USER.replace('@','')}?text=${encodeURIComponent(generateOrderSummary(shipping))}`, '_blank');
   }
 
-  // ================= BUSCADOR =================
+  // ✅ BUSCADOR CORREGIDO
   function initSearch() {
-    const input = document.getElementById('search-input'); if(!input) return;
+    const input = document.getElementById('search-input'); 
+    if(!input) return;
+    
     input.addEventListener('input', (e) => {
       const q = e.target.value.trim().toLowerCase();
       const banner = document.getElementById('promo-banner');
-      if(!q) { if(banner) banner.classList.remove('hidden'); filterByLeague(Object.keys(TEAMS)[0]); return; }
+      
+      // Si está vacío, volver a la primera liga
+      if(!q) { 
+        if(banner) banner.classList.remove('hidden'); 
+        const firstLeague = Object.keys(TEAMS)[0];
+        if(firstLeague) filterByLeague(firstLeague); 
+        return; 
+      }
+      
+      // Ocultar banner de promo durante búsqueda
       if(banner) banner.classList.add('hidden');
+      
       const results = [];
       Object.entries(TEAMS).forEach(([key, league]) => {
-        // ✅ CORRECCIÓN: Convertir objeto a array para buscar
         const teams = Object.values(league.teams);
         teams.forEach(team => {
-          if(team.name.toLowerCase().includes(q) || league.name.toLowerCase().includes(q)) results.push({...team, leagueName: league.name, leagueKey: key});
+          if(team.name.toLowerCase().includes(q) || league.name.toLowerCase().includes(q)) {
+            results.push({...team, leagueName: league.name, leagueKey: key});
+          }
         });
       });
-      if(results.length===0) { const g=document.getElementById('products-grid'); if(g) g.innerHTML=`<div class="col-span-full text-center py-12 text-gray-400">No se encontraron resultados para "${q}"</div>`; }
-      else renderProducts(null, results); // Nota: renderProducts necesita ajuste para customList si quieres soporte buscador
+
+      if(results.length === 0) { 
+        const g = document.getElementById('products-grid'); 
+        if(g) g.innerHTML = `<div class="col-span-full text-center py-12 text-gray-400">No se encontraron resultados para "${q}"</div>`; 
+      } else {
+        renderProducts(null, results);
+      }
     });
   }
 
@@ -391,46 +419,36 @@
 
   // ================= INICIALIZACIÓN (CONECTADA A FIREBASE) =================
   function initApp() {
-    // 1. Renderizar botones de navegación (vacío al inicio)
     renderLeagueButtons();
 
-    // 2. Escuchar cambios en la base de datos en tiempo real
     db.ref('teams').on('value', (snapshot) => {
       TEAMS = snapshot.val() || {};
-      
-      // Actualizar UI cuando cambian los datos
       renderLeagueButtons();
       
-      // Si estamos en una liga, renderizarla, si no, la primera
       const currentLeagueBtn = document.querySelector('.league-btn.active');
       const leagueToLoad = currentLeagueBtn ? currentLeagueBtn.dataset.league : Object.keys(TEAMS)[0];
       
       if(leagueToLoad && TEAMS[leagueToLoad]) renderProducts(leagueToLoad);
       
-      // Reiniciar contadores de vistas al cambiar datos
       initViewerCounters();
     });
 
-    // 3. Iniciar resto de componentes
     updateCartCounter();
     initSearch();
     initBackToTop();
     renderReviews();
 
-    // 4. Modal listeners
     const cm = document.getElementById('cart-modal');
     if(cm) cm.addEventListener('click', e => { if(e.target===cm) closeCartModal(); });
     document.addEventListener('keydown', e => { if(e.key==='Escape') closeCartModal(); });
   }
   
-  // Ejecutar al cargar
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initApp);
   } else {
     initApp();
   }
 
-  // Exponer funciones globales
   window.filterByLeague=filterByLeague; window.selectSize=selectSize; window.togglePersonalization=togglePersonalization;
   window.changeKitImage=changeKitImage; window.addToCart=addToCart; window.openCartModal=openCartModal;
   window.closeCartModal=closeCartModal; window.removeFromCart=removeFromCart; window.openWhatsApp=openWhatsApp;
@@ -477,7 +495,6 @@
 
 <main id="catalog" class="max-w-7xl mx-auto px-4 pb-24"><div id="products-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"><p class="col-span-full text-center text-gray-400 py-12">Cargando equipos...</p></div></main>
 
-<!-- SECCIÓN DE RESEÑAS -->
 <section id="reviews" class="border-t border-gray-800 py-16 px-4 bg-dark-card/30">
   <div class="max-w-6xl mx-auto">
     <h2 class="text-3xl font-bold text-center mb-3">⭐ Lo que dicen nuestros clientes</h2>
